@@ -119,3 +119,11 @@ The frontend development server runs on `http://localhost:5173` and proxies API 
 1. **ICAO 9303 MRZ Validator** (`backend/app/forensic/mrz.py`): Parses passport MRZ lines and calculates weighted modulo-10 checksums across Document Number, Date of Birth, Expiry Date, and Composite data strings.
 2. **Image Error Level Analysis** (`backend/app/forensic/ela.py`): Performs JPEG compression difference analysis on uploaded document scans to locate image editing and splicing artifacts.
 3. **Dempster-Shafer Combination Engine** (`backend/app/forensic/fusion.py`): Integrates independent belief masses from verification modules using Dempster-Shafer orthogonal combination to calculate composite risk scores and handle conflicting evidence.
+
+---
+
+## Deployment and Security Notes
+
+* Sovereign application structure configured for offline deployment at border checkpoints.
+* SQLite WAL mode enabled for reliable local audit record persistence.
+
