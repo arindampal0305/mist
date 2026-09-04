@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Gavel, Save } from 'lucide-react';
+import { Gavel, Save } from 'lucide-react';
 import { ScreeningResponse, AuditEntry } from '../types';
 import { RiskGauge } from './RiskGauge';
 import { ShapChart } from './ShapChart';
@@ -8,131 +8,109 @@ interface Props {
   data: ScreeningResponse;
 }
 
+const actionButtons = [
+  { label: 'Clear Passage', value: 'CLEAR PASSAGE', borderAccent: 'border-l-[3px] border-l-emerald-600' },
+  { label: 'Secondary Interview', value: 'SECONDARY INTERVIEW', borderAccent: 'border-l-[3px] border-l-amber-500' },
+  { label: 'Retain Document', value: 'RETAIN DOCUMENT', borderAccent: 'border-l-[3px] border-l-amber-500' },
+  { label: 'Immediate Detain', value: 'IMMEDIATE DETAIN', borderAccent: 'border-l-[3px] border-l-red-600' },
+];
+
 export const DecisionHub: React.FC<Props> = ({ data }) => {
   const [justification, setJustification] = useState('');
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
 
-  const handleAction = (actionStr: string) => {
+  const handleAction = async (actionStr: string) => {
     if (data.risk_score > 25 && !justification.trim()) {
-      alert("Justification required for risk score > 25");
+      alert('Justification required for risk score > 25.');
       return;
     }
 
     const entry: AuditEntry = {
       session_id: data.session_id,
-      officer_id: 'OFFICER-77',
+      officer_id: 'SSB-77',
       action: actionStr,
-      justification: justification || 'N/A',
-      timestamp: new Date().toISOString()
+      justification: justification.trim() || 'Standard clearance',
+      timestamp: new Date().toISOString(),
     };
 
-    setAuditLog([entry, ...auditLog].slice(0, 5));
+    try {
+      await fetch('/api/audit/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      });
+    } catch (_) {}
+
+    setAuditLog((prev) => [entry, ...prev].slice(0, 5));
     setJustification('');
   };
 
-  const isCritical = data.risk_band === 'CRITICAL';
-  const containerClasses = `bg-zinc-900 border rounded-lg flex flex-col h-full overflow-hidden ${
-    isCritical ? 'border-red-600 animate-pulse-critical bg-red-950/20' : 'border-zinc-800'
-  }`;
-
   return (
-    <div className={containerClasses}>
-      {/* Header */}
-      <div className="p-4 border-b border-zinc-800 flex items-center gap-2 shrink-0">
-        <Activity className="w-4 h-4 text-sky-400" />
-        <h2 className="text-sm font-semibold tracking-wider text-slate-300 uppercase">
-          Decision & Evidence Hub
-        </h2>
+    <div className="space-y-4 font-sans">
+      {/* Session Metadata Header */}
+      <div className="bg-surface rounded-xl border border-navy/10 p-3 flex items-center justify-between text-xs font-sans text-gray-700 font-medium">
+        <span>Session: <strong className="text-navy font-bold">{data.session_id}</strong></span>
+        <span className="text-gray-700">{data.document_type}</span>
       </div>
 
-      <div className="p-4 space-y-5 overflow-y-auto flex-1">
-        {/* Session Info */}
-        <div className="flex justify-between items-center text-xs text-zinc-400 bg-zinc-950 px-3 py-2 rounded border border-zinc-800">
-          <span>ID: {data.session_id}</span>
-          <span>{data.document_type}</span>
-        </div>
+      {/* Dempster-Shafer Belief Bar (Fix 1) */}
+      <RiskGauge score={data.risk_score} band={data.risk_band} dsMasses={data.ds_masses} />
 
-        {/* Risk Gauge */}
-        <div>
-          <h3 className="text-xs font-semibold text-zinc-500 uppercase mb-2 text-center">Composite Risk Score</h3>
-          <RiskGauge score={data.risk_score} band={data.risk_band} />
-        </div>
+      {/* SHAP Chart */}
+      <ShapChart attributions={data.shap_attributions} />
 
-        {/* Action Required Badge */}
-        <div className="flex justify-center">
-          <span className={`text-xs font-bold px-3 py-1 rounded border ${
-            data.action_required === 'DETAIN' ? 'bg-red-500/20 text-red-500 border-red-500/50' :
-            data.action_required === 'RETAIN' ? 'bg-rose-500/20 text-rose-500 border-rose-500/50' :
-            data.action_required === 'INTERVIEW' ? 'bg-amber-500/20 text-amber-500 border-amber-500/50' :
-            'bg-emerald-500/20 text-emerald-500 border-emerald-500/50'
-          }`}>
-            RECOMMENDED: {data.action_required}
-          </span>
-        </div>
-
-        {/* SHAP Attributions */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-zinc-500 uppercase">Risk Factor Attributions</h3>
-          <ShapChart attributions={data.shap_attributions} />
-        </div>
-
-        {/* Officer Action Drawer */}
-        <div className="space-y-3 pt-4 border-t border-zinc-800">
-          <h3 className="text-xs font-semibold text-zinc-400 uppercase flex items-center gap-2">
-            <Gavel className="w-3.5 h-3.5" />
-            Officer Determination
-          </h3>
-          
-          <textarea
-            value={justification}
-            onChange={(e) => setJustification(e.target.value)}
-            placeholder="Enter justification (required for risk > 25)..."
-            className="w-full h-20 bg-zinc-950 border border-zinc-700 rounded p-2 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-sky-500 resize-none"
-          />
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleAction('CLEAR PASSAGE')}
-              className="text-xs font-semibold px-2 py-2 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-800 hover:bg-emerald-900/60 transition-colors"
-            >
-              CLEAR PASSAGE
-            </button>
-            <button
-              onClick={() => handleAction('SECONDARY INTERVIEW')}
-              className="text-xs font-semibold px-2 py-2 rounded bg-amber-950/40 text-amber-400 border border-amber-800 hover:bg-amber-900/60 transition-colors"
-            >
-              SECONDARY INTERVIEW
-            </button>
-            <button
-              onClick={() => handleAction('RETAIN DOCUMENT')}
-              className="text-xs font-semibold px-2 py-2 rounded bg-rose-950/40 text-rose-400 border border-rose-800 hover:bg-rose-900/60 transition-colors"
-            >
-              RETAIN DOCUMENT
-            </button>
-            <button
-              onClick={() => handleAction('DETAIN')}
-              className="text-xs font-semibold px-2 py-2 rounded bg-red-950/40 text-red-400 border border-red-800 hover:bg-red-900/60 transition-colors"
-            >
-              DETAIN
-            </button>
+      {/* Officer Disposition & Action Drawer (Fix 4 & Fix 2) */}
+      <div className="bg-surface rounded-xl border border-navy/10 p-4 space-y-3">
+        <div className="flex items-center justify-between text-xs font-sans text-gray-700 font-medium">
+          <div className="flex items-center gap-1.5">
+            <Gavel className="w-3.5 h-3.5 text-gray-600" />
+            <span className="font-semibold text-navy">Officer Disposition</span>
           </div>
+          <span className="text-gray-700">SSB-77</span>
         </div>
 
-        {/* Mini Audit Log */}
+        {/* Textarea with Inter font */}
+        <textarea
+          value={justification}
+          onChange={(e) => setJustification(e.target.value)}
+          placeholder={
+            data.risk_score > 25
+              ? 'Enter mandatory justification for risk score > 25...'
+              : 'Enter optional rationale...'
+          }
+          className="w-full h-14 bg-canvas border border-gray-300 rounded-lg p-2.5 text-xs font-sans text-navy placeholder:text-gray-500 focus:border-gray-500 resize-none"
+        />
+
+        {/* Action Buttons with 3px Left-Border Accents */}
+        <div className="grid grid-cols-2 gap-2">
+          {actionButtons.map((btn) => (
+            <button
+              key={btn.value}
+              onClick={() => handleAction(btn.value)}
+              className={`w-full p-2.5 rounded-lg border border-gray-300 ${btn.borderAccent} bg-surface hover:bg-gray-100 text-navy text-xs font-sans font-medium text-left transition-colors`}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Disposition Audit Trail inside Disposition Box */}
         {auditLog.length > 0 && (
-          <div className="pt-4 border-t border-zinc-800 space-y-2">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase flex items-center gap-2">
-              <Save className="w-3 h-3" />
-              Recent Actions
-            </h3>
-            <div className="space-y-2">
+          <div className="pt-2 border-t border-gray-200 space-y-1.5 font-sans">
+            <div className="flex items-center justify-between text-xs text-gray-700 font-medium">
+              <span className="flex items-center gap-1">
+                <Save className="w-3 h-3 text-gray-600" />
+                Disposition Audit Trail
+              </span>
+              <span>{auditLog.length} LOGGED</span>
+            </div>
+            <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5">
               {auditLog.map((log, i) => (
-                <div key={i} className="text-[10px] bg-zinc-950 p-2 rounded border border-zinc-800">
-                  <div className="flex justify-between text-zinc-400 mb-1">
-                    <span className="font-semibold text-sky-400">{log.action}</span>
-                    <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                  </div>
-                  <div className="text-zinc-500 truncate">{log.justification}</div>
+                <div key={i} className="text-xs font-sans bg-canvas/60 p-1.5 rounded border border-gray-200 flex justify-between items-center text-gray-800 font-medium">
+                  <span className="font-bold text-navy">{log.action}</span>
+                  <span className="text-gray-600 text-[11px]">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               ))}
             </div>

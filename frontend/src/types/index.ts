@@ -1,9 +1,20 @@
+export interface MRZField {
+  val: string;
+  expected: number;
+  calculated: number;
+  passed: boolean;
+}
+
 export interface MRZParsed {
   doc_no: string;
   doc_passed: boolean;
   dob: string;
   dob_passed: boolean;
+  expiry?: string;
+  expiry_passed?: boolean;
   comp_passed: boolean;
+  raw_line1?: string;
+  raw_line2?: string;
 }
 
 export interface TamperingResult {
@@ -11,16 +22,27 @@ export interface TamperingResult {
   copy_move_flag: boolean;
   mvss_flag?: boolean;
   info?: string;
+  tamper_score?: number;
+  ela_image_base64?: string;
 }
 
 export interface BiometricResult {
   face_match_score: number;
   liveness_status: string;
+  arcface_similarity?: number;
+  minifasnet_score?: number;
 }
 
 export interface ShapAttribution {
   name: string;
   value: number;
+}
+
+export interface DempsterShaferMass {
+  G: number;
+  F: number;
+  U: number;
+  K?: number;
 }
 
 export interface ScreeningResponse {
@@ -33,6 +55,7 @@ export interface ScreeningResponse {
   biometrics: BiometricResult;
   shap_attributions: ShapAttribution[];
   action_required: string;
+  ds_masses?: DempsterShaferMass;
 }
 
 export interface AuditEntry {
