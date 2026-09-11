@@ -8,10 +8,18 @@ interface Props {
 }
 
 export const RiskGauge: React.FC<Props> = ({ score, band, dsMasses }) => {
-  // Calculate percentage values
-  const G = dsMasses?.G !== undefined ? Math.round(dsMasses.G * 100) : (band === 'LOW' ? 92 : band === 'MEDIUM' ? 45 : 5);
-  const F = dsMasses?.F !== undefined ? Math.round(dsMasses.F * 100) : score;
-  const U = dsMasses?.U !== undefined ? Math.round(dsMasses.U * 100) : Math.max(0, 100 - G - F);
+  let G: number, F: number, U: number;
+
+  if (dsMasses && dsMasses.G !== undefined && dsMasses.F !== undefined && dsMasses.U !== undefined) {
+    G = Math.round(dsMasses.G * 100);
+    F = Math.round(dsMasses.F * 100);
+    U = Math.max(0, 100 - G - F); // Ensures G + F + U = 100% precisely
+  } else {
+    // Math calibration for fallback display: G + F + U = 100%
+    F = Math.min(100, Math.max(0, score));
+    U = band === 'LOW' ? 5 : band === 'MEDIUM' ? 15 : 10;
+    G = Math.max(0, 100 - F - U);
+  }
 
   return (
     <div className="bg-surface rounded-xl border border-navy/10 p-4 space-y-3 font-sans">
@@ -67,7 +75,7 @@ export const RiskGauge: React.FC<Props> = ({ score, band, dsMasses }) => {
         </span>
       </div>
 
-      {/* Single line below bar, left-aligned, small sans text. Not bold. Not large. */}
+      {/* Single line below bar */}
       <div className="text-xs font-sans text-gray-600 font-medium pt-0.5">
         {score} / 100 {band.toUpperCase()} RISK
       </div>

@@ -220,7 +220,8 @@ async def screen_upload(
             },
             "shap_attributions": risk_result["shap_attributions"],
             "action_required": risk_result["action_required"],
-            "original_image_base64": orig_b64
+            "original_image_base64": orig_b64,
+            "ds_masses": risk_result.get("ds_masses")
         }
 
     except Exception as e:

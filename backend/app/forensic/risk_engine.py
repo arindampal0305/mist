@@ -118,5 +118,6 @@ class RiskScoringEngine:
             "risk_score": risk_score,
             "risk_band": risk_band,
             "action_required": action_required,
-            "shap_attributions": shap_attributions
+            "shap_attributions": shap_attributions,
+            "ds_masses": fused
         }
