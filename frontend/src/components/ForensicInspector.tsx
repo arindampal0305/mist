@@ -8,23 +8,28 @@ interface Props {
 }
 
 export const ForensicInspector: React.FC<Props> = ({ data }) => {
-  // Map session ID or scenario attributes to scenarioId
+  // Map session ID or scenario attributes to scenarioId ONLY for mock injections
   const getScenarioId = () => {
-    if (data.session_id === 'MIST-4081-B' || (data.tampering.ela_flag && data.biometrics.face_match_score < 30)) {
-      return 'spliced_photo';
-    }
-    if (data.session_id === 'MIST-1102-C' || !data.mrz_parsed.dob_passed) {
-      return 'dob_alteration';
-    }
-    if (data.session_id === 'MIST-6612-F' || data.risk_band === 'CRITICAL') {
-      return 'watchlist_hit';
-    }
+    if (data.session_id === 'MIST-4081-B') return 'spliced_photo';
+    if (data.session_id === 'MIST-1102-C') return 'dob_alteration';
+    if (data.session_id === 'MIST-6612-F') return 'watchlist_hit';
     return 'clean_passport';
   };
 
   const scenarioId = getScenarioId();
   const faceScore = data.biometrics.face_match_score;
   const isMismatch = faceScore < 30;
+
+  const originalSrc = data.original_image_base64
+    ? `data:image/jpeg;base64,${data.original_image_base64}`
+    : '/passport.jpg';
+
+  const elaSrc = data.tampering.ela_image_base64
+    ? `data:image/jpeg;base64,${data.tampering.ela_image_base64}`
+    : undefined;
+
+  const rawLine1 = data.mrz_parsed.raw_line1 || `P<INDTHAPLIYAL<<GARIMA<<<<<<<<<<<<<<<<<<<<<<<`;
+  const rawLine2 = data.mrz_parsed.raw_line2 || `${data.mrz_parsed.doc_no}<2IND9407015F34090281065269546124<78`;
 
   return (
     <div className="space-y-4 font-sans text-xs">
@@ -43,7 +48,8 @@ export const ForensicInspector: React.FC<Props> = ({ data }) => {
         elaFlag={data.tampering.ela_flag}
         tamperScore={data.tampering.tamper_score}
         info={data.tampering.info}
-        originalSrc="/passport.jpg"
+        originalSrc={originalSrc}
+        elaSrc={elaSrc}
       />
 
       {/* Module 2: ICAO 9303 MRZ Checksum */}
@@ -56,13 +62,13 @@ export const ForensicInspector: React.FC<Props> = ({ data }) => {
           <span className="text-gray-600">Modulo-10</span>
         </div>
 
-        {/* Raw MRZ Lines - IBM Plex Mono ONLY for raw MRZ text strings */}
+        {/* Raw MRZ Lines */}
         <div className="bg-canvas rounded p-2.5 font-mono text-[11px] text-navy tracking-widest overflow-x-auto space-y-0.5 border border-gray-300">
-          <p className="text-navy font-semibold">{data.mrz_parsed.raw_line1 || 'P<INDPASSPORT<<KUMAR<<SUJAL<<<<<<<<<<<<<<<<<<'}</p>
-          <p className="text-navy font-semibold">{data.mrz_parsed.raw_line2 || `${data.mrz_parsed.doc_no}<4IND9108144M3108146<<<<<<<<<<<02`}</p>
+          <p className="text-navy font-semibold">{rawLine1}</p>
+          <p className="text-navy font-semibold">{rawLine2}</p>
         </div>
 
-        {/* Checksum Grid Cards - Inter font for all labels, IBM Plex Mono ONLY for doc_no value */}
+        {/* Checksum Grid Cards */}
         <div className="grid grid-cols-3 gap-2 font-sans">
           {/* Doc No */}
           <div className={`p-2.5 rounded border ${!data.mrz_parsed.doc_passed ? 'bg-red-50 border-red-300' : 'bg-canvas border-gray-300'}`}>
@@ -174,7 +180,7 @@ export const ForensicInspector: React.FC<Props> = ({ data }) => {
             </div>
           </div>
 
-          {/* Card 2: Liveness Detection - Two-column inline key-value pairs */}
+          {/* Card 2: Liveness Detection */}
           <div className="p-3.5 rounded bg-canvas border border-gray-300 space-y-2.5">
             <span className="text-xs text-gray-700 font-semibold block">Liveness Detection</span>
             

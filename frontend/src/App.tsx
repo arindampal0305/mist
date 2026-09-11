@@ -44,9 +44,33 @@ const App: React.FC = () => {
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/screen/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        setData(result);
+      } else {
+        console.error('Upload failed with HTTP status', res.status);
+      }
+    } catch (e) {
+      console.error('Network error during document upload', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen bg-canvas text-navy font-sans overflow-hidden">
-      {/* ─── Institutional Header Bar (Fix 2) ─── */}
+      {/* ─── Institutional Header Bar ─── */}
       <header className="h-14 bg-surface border-b border-gray-300 flex items-center justify-between px-6 shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <h1 className="text-[22px] font-bold text-navy tracking-[0.05em] leading-none">
@@ -70,7 +94,7 @@ const App: React.FC = () => {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-[280px] bg-surface shadow-sidebar flex flex-col shrink-0 border-r border-gray-300">
-          {/* Operator Status Bar - Inter font (Fix 1 & Fix 6) */}
+          {/* Operator Status Bar */}
           <div className="p-3.5 border-b border-gray-200 bg-gray-50/50">
             <div className="flex items-center gap-1.5 text-xs font-sans font-medium text-gray-700">
               <Shield className="w-4 h-4 text-navy shrink-0" strokeWidth={2} />
@@ -84,7 +108,11 @@ const App: React.FC = () => {
 
           {/* Ingestion Panel (Scanner & Camera) */}
           <div className="flex-1 overflow-y-auto">
-            <IngestionPanel onScenarioSelect={handleScenario} loading={loading} />
+            <IngestionPanel
+              onScenarioSelect={handleScenario}
+              onFileUpload={handleFileUpload}
+              loading={loading}
+            />
           </div>
 
           {/* Sidebar Clock Footer */}
@@ -125,7 +153,7 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      {/* ─── Full Footer Bar (Fix 5) ─── */}
+      {/* ─── Full Footer Bar ─── */}
       <footer className="bg-surface border-t border-gray-300 p-4 px-6 shrink-0 font-sans text-navy">
         <div className="flex items-start justify-between gap-6">
           {/* ROW 1 - Left Aligned */}
@@ -133,9 +161,9 @@ const App: React.FC = () => {
             <p className="text-navy font-medium">
               MIST | Multi-layered Intelligence & Screening Technology
             </p>
-            <p>SIH 2026 Prototype | Team Hacksmiths</p>
+            <p>Prototype made for ICCI 2026 Exhibition</p>
             <p className="text-[11px] text-gray-500">
-              Teammates: Arindam Pal, Sujal Kumar, Anuj Upadhayay, Sneha Tiwari, Khushi Kumari, Nisha Chhabra
+              Team mates: Arindam Pal, Sneha Tiwari, Aman Ansari, Sujal Kumar
             </p>
           </div>
 
@@ -147,7 +175,7 @@ const App: React.FC = () => {
 
         {/* ROW 2 - Centered Disclaimer */}
         <div className="mt-2.5 pt-2 border-t border-gray-200/70 text-center text-[10px] text-gray-400 font-normal">
-          This is a prototype developed for Smart India Hackathon 2026. Not intended for operational deployment.
+          This is a prototype with few working features that we made to display at ICCI 2026, BIT Mesra.
         </div>
       </footer>
     </div>

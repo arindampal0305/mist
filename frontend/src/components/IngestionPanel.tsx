@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  Upload, Camera, ShieldCheck, FileWarning, AlertTriangle, Skull, Settings,
+  Upload, Camera, ShieldCheck, FileWarning, AlertTriangle, Skull, Settings, Loader2
 } from 'lucide-react';
 
 interface Props {
   onScenarioSelect: (id: string) => void;
+  onFileUpload?: (file: File) => void;
   loading: boolean;
 }
 
@@ -31,10 +32,18 @@ const scenarios = [
   },
 ];
 
-export const IngestionPanel: React.FC<Props> = ({ onScenarioSelect, loading }) => {
+export const IngestionPanel: React.FC<Props> = ({ onScenarioSelect, onFileUpload, loading }) => {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [showDevTools, setShowDevTools] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const processFile = (file: File) => {
+    setFileName(file.name);
+    if (onFileUpload) {
+      onFileUpload(file);
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -44,29 +53,59 @@ export const IngestionPanel: React.FC<Props> = ({ onScenarioSelect, loading }) =
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) setFileName(e.dataTransfer.files[0].name);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+    e.target.value = '';
+  };
+
+  const handleDropZoneClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
     <div className="p-4 space-y-4 font-sans">
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        accept="image/*,.pdf"
+        className="hidden"
+      />
+
       {/* Document Drop Zone */}
       <div className="space-y-1">
         <p className="text-xs text-gray-700 font-medium">
           Document Scanner
         </p>
         <div
-          className={`flex flex-col items-center justify-center p-4 border border-dashed rounded-lg transition-all ${
-            dragActive ? 'border-navy bg-canvas' : 'border-gray-300 hover:border-gray-400 bg-canvas/40'
-          }`}
+          onClick={handleDropZoneClick}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          className={`flex flex-col items-center justify-center p-4 border border-dashed rounded-lg cursor-pointer transition-all ${
+            dragActive
+              ? 'border-navy bg-canvas'
+              : 'border-gray-300 hover:border-gray-400 bg-canvas/40'
+          }`}
         >
-          <Upload className="w-4 h-4 mb-1 text-gray-600" />
-          <span className="text-xs text-gray-800 font-medium">
-            {fileName || 'Drop passport scan'}
+          {loading ? (
+            <Loader2 className="w-5 h-5 mb-1 text-navy animate-spin" />
+          ) : (
+            <Upload className="w-4 h-4 mb-1 text-gray-600" />
+          )}
+          <span className="text-xs text-gray-800 font-medium text-center truncate max-w-full px-2">
+            {loading ? 'Processing scan...' : (fileName || 'Drop passport scan or click to upload')}
           </span>
           <span className="text-[11px] text-gray-500 font-normal mt-0.5">JPG, PNG, PDF</span>
         </div>

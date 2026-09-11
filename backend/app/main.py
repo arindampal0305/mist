@@ -1,20 +1,28 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import base64
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from .forensic.mrz import ICAO9303Validator
 from .forensic.ela import ELADetector
+from .forensic.copy_move import CopyMoveDetector
+from .forensic.mvss_net import MVSSNetLocalizer
+from .forensic.metadata import MetadataForensics
+from .forensic.ocr import DocumentOCR
+from .forensic.face import FaceVerifier
+from .forensic.liveness import LivenessDetector
+from .forensic.risk_engine import RiskScoringEngine
 from .forensic.fusion import DempsterShaferCombiner
+
 from .schemas import (
-    MockScenarioRequest, AuditEntry
+    MockScenarioRequest, AuditEntry, ScreeningResponse
 )
 from .core.security import check_watchlist
 from .core.database import insert_audit_entry, get_audit_entries
 
-app = FastAPI(title="MIST - Backend Core Engine")
+app = FastAPI(title="MIST - Multimodal Intelligent Screening Terminal Backend Core Engine")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,11 +32,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-Memory audit log simulator
+# In-Memory audit log storage
 AUDIT_LOG: list = []
 
-# Hardcoded Watchlist SHA-256 for Scenario 4 (Document No: "Z11122233")
-WATCHLIST_HASHES = {"97cf923984533036e52003666b6045d625cd69a8183fbc3dfbeec7d7b275bf87"}
+# Watchlist Document Numbers (SHA-256 or raw)
+WATCHLIST_DOCS = {"Z11122233", "A99988877"}
 
 
 @app.post("/api/screen/scenario")
@@ -39,14 +47,6 @@ def inject_scenario(payload: MockScenarioRequest):
     sid = payload.scenario_id
 
     if sid == "clean_passport":
-        # Raw masses: High Genuine, Zero Fake, low Unknown
-        m_val = {"G": 0.95, "F": 0.00, "U": 0.05}
-        m_tam = {"G": 0.90, "F": 0.00, "U": 0.10}
-        m_bio = {"G": 0.92, "F": 0.00, "U": 0.08}
-
-        fused = DempsterShaferCombiner.fuse_ensemble([m_val, m_tam, m_bio])
-        risk_score = int(fused["F"] * 100)  # Platt-scale proxy
-
         return {
             "session_id": "MIST-9022-A",
             "document_type": "INDIAN PASSPORT (TD3)",
@@ -57,10 +57,10 @@ def inject_scenario(payload: MockScenarioRequest):
                 "dob": "1991-08-14", "dob_passed": True,
                 "comp_passed": True
             },
-            "tampering": {"ela_flag": False, "copy_move_flag": False},
+            "tampering": {"ela_flag": False, "copy_move_flag": False, "mvss_flag": False},
             "biometrics": {"face_match_score": 92, "liveness_status": "LIVE"},
             "shap_attributions": [
-                {"name": "MRZ Check", "value": -12},
+                {"name": "MRZ Checksum Validation", "value": -12},
                 {"name": "Face Vector Match", "value": -15},
                 {"name": "ELA Forensics", "value": -5},
                 {"name": "Liveness Check", "value": -10}
@@ -69,13 +69,6 @@ def inject_scenario(payload: MockScenarioRequest):
         }
 
     elif sid == "spliced_photo":
-        # High tamper mass, validation passes, biometrics mismatch
-        m_val = {"G": 0.95, "F": 0.00, "U": 0.05}
-        m_tam = {"G": 0.05, "F": 0.85, "U": 0.10}  # High Tamper Fake
-        m_bio = {"G": 0.10, "F": 0.80, "U": 0.10}  # High Biometric Mismatch Fake
-
-        fused = DempsterShaferCombiner.fuse_ensemble([m_val, m_tam, m_bio])
-        # Force exact calibrated presentation score of 79
         return {
             "session_id": "MIST-4081-B",
             "document_type": "INDIAN PASSPORT (TD3)",
@@ -98,13 +91,6 @@ def inject_scenario(payload: MockScenarioRequest):
         }
 
     elif sid == "dob_alteration":
-        # MRZ failure, Tamper uncertain (PNG reprint), Face matches
-        m_val = {"G": 0.00, "F": 0.95, "U": 0.05}  # High Validation Fake (Check digit fail)
-        m_tam = {"G": 0.00, "F": 0.00, "U": 1.00}  # ELA completely silent (absorbs PNG uncertainty)
-        m_bio = {"G": 0.88, "F": 0.00, "U": 0.12}
-
-        fused = DempsterShaferCombiner.fuse_ensemble([m_val, m_tam, m_bio])
-
         return {
             "session_id": "MIST-1102-C",
             "document_type": "INDIAN PASSPORT (TD3)",
@@ -112,7 +98,7 @@ def inject_scenario(payload: MockScenarioRequest):
             "risk_band": "HIGH",
             "mrz_parsed": {
                 "doc_no": "M4402910", "doc_passed": True,
-                "dob": "1985-04-22", "dob_passed": False,  # Altered DOB Checksum Failed!
+                "dob": "1985-04-22", "dob_passed": False,
                 "comp_passed": False
             },
             "tampering": {"ela_flag": False, "copy_move_flag": False, "info": "ELA inactive due to Lossless Input (PNG)"},
@@ -121,13 +107,12 @@ def inject_scenario(payload: MockScenarioRequest):
                 {"name": "MRZ Check Digit 3", "value": 48},
                 {"name": "DOB Crosscheck Error", "value": 35},
                 {"name": "Face Vector Match", "value": -10},
-                {"name": "ELA Compression", "value": 0}  # Absorbed by Dempster Shafer!
+                {"name": "ELA Compression", "value": 0}
             ],
             "action_required": "DOCUMENT_RETAINED"
         }
 
     elif sid == "watchlist_hit":
-        # Raw scores irrelevant. Immediate Hard Override.
         return {
             "session_id": "MIST-6612-F",
             "document_type": "INDIAN PASSPORT (TD3)",
@@ -141,7 +126,7 @@ def inject_scenario(payload: MockScenarioRequest):
             "tampering": {"ela_flag": False, "copy_move_flag": False},
             "biometrics": {"face_match_score": 90, "liveness_status": "LIVE"},
             "shap_attributions": [
-                {"name": "MHA Security Watchlist", "value": 100}  # Watchlist Match Override
+                {"name": "MHA Security Watchlist Match", "value": 100}
             ],
             "action_required": "IMMEDIATE_DETAIN"
         }
@@ -150,15 +135,96 @@ def inject_scenario(payload: MockScenarioRequest):
 
 
 @app.post("/api/screen/upload")
-async def screen_upload(file: UploadFile = File(...)):
-    """Accepts an uploaded image, runs ELA analysis, returns base64 ELA image and tamper score."""
-    contents = await file.read()
+async def screen_upload(
+    file: UploadFile = File(...),
+    face_file: Optional[UploadFile] = File(None)
+):
+    """
+    Live Document Screening Endpoint:
+    Accepts uploaded document image & optional face image.
+    Executes full 5-layer pipeline (OCR, 5 Forensics Detectors, Dempster-Shafer Fusion, ArcFace, Risk Engine).
+    """
+    doc_bytes = await file.read()
+    face_bytes = await face_file.read() if face_file else None
+
     try:
-        output_bytes, tamper_score = ELADetector.run_ela_analysis(contents)
-        encoded = base64.b64encode(output_bytes).decode("utf-8")
-        return {"ela_image_base64": encoded, "tamper_score": tamper_score}
+        # Module 1: Document OCR & MRZ Checksum Validation
+        mrz_data = DocumentOCR.process_document(doc_bytes)
+
+        # Module 2: Digital & Physical Tampering Detectors
+        ela_bytes, ela_score = ELADetector.run_ela_analysis(doc_bytes)
+        ela_flag = ela_score > 0.45
+
+        cm_bytes, cm_score, cm_flag = CopyMoveDetector.detect_copy_move(doc_bytes)
+        mvss_bytes, mvss_score, mvss_flag = MVSSNetLocalizer.detect_manipulation(doc_bytes)
+        exif_data = MetadataForensics.analyze_metadata(doc_bytes)
+
+        tamper_scores = {
+            "ela": ela_score,
+            "copy_move": cm_score,
+            "mvss": mvss_score,
+            "exif": exif_data["score"]
+        }
+
+        # Module 3: Facial Verification & Liveness
+        face_match_score, face_match_flag = FaceVerifier.verify_faces(doc_bytes, face_bytes)
+        liveness_status, liveness_score = LivenessDetector.detect_liveness(face_bytes)
+
+        # Watchlist Check
+        is_watchlist = mrz_data["doc_no"] in WATCHLIST_DOCS or check_watchlist(mrz_data["doc_no"])
+
+        # Module 4: Multimodal Risk Engine with Platt Scaling & SHAP Attributions
+        risk_result = RiskScoringEngine.calculate_risk(
+            mrz_data=mrz_data,
+            tamper_scores=tamper_scores,
+            face_match_score=face_match_score,
+            liveness_status=liveness_status,
+            is_watchlist_match=is_watchlist
+        )
+
+        # Encode generated overlay heatmaps to Base64
+        orig_b64 = base64.b64encode(doc_bytes).decode("utf-8")
+        ela_b64 = base64.b64encode(ela_bytes).decode("utf-8") if ela_bytes else ""
+        mvss_b64 = base64.b64encode(mvss_bytes).decode("utf-8") if mvss_bytes else ""
+        cm_b64 = base64.b64encode(cm_bytes).decode("utf-8") if cm_bytes else ""
+
+        session_id = f"MIST-{datetime.now().strftime('%M%S')}-L"
+
+        return {
+            "session_id": session_id,
+            "document_type": "INDIAN PASSPORT (TD3)",
+            "risk_score": risk_result["risk_score"],
+            "risk_band": risk_result["risk_band"],
+            "mrz_parsed": {
+                "doc_no": mrz_data["doc_no"],
+                "doc_passed": mrz_data["doc_passed"],
+                "dob": mrz_data["dob"],
+                "dob_passed": mrz_data["dob_passed"],
+                "comp_passed": mrz_data["comp_passed"],
+                "raw_line1": mrz_data.get("raw_line1", ""),
+                "raw_line2": mrz_data.get("raw_line2", "")
+            },
+            "tampering": {
+                "ela_flag": ela_flag,
+                "copy_move_flag": cm_flag,
+                "mvss_flag": mvss_flag,
+                "ela_score": ela_score,
+                "tamper_score": round(max(ela_score, cm_score, mvss_score), 2),
+                "ela_image_base64": ela_b64,
+                "mvss_image_base64": mvss_b64,
+                "copy_move_base64": cm_b64
+            },
+            "biometrics": {
+                "face_match_score": face_match_score,
+                "liveness_status": liveness_status
+            },
+            "shap_attributions": risk_result["shap_attributions"],
+            "action_required": risk_result["action_required"],
+            "original_image_base64": orig_b64
+        }
+
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"ELA analysis failed: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Live screening pipeline failure: {str(e)}")
 
 
 class MRZValidateRequest(BaseModel):
@@ -185,7 +251,7 @@ def create_audit_log(entry: AuditEntry):
     try:
         insert_audit_entry(entry_dict)
     except Exception:
-        pass  # Gracefully handle DB errors during demo
+        pass
     return {"status": "success", "total_entries": len(AUDIT_LOG)}
 
 
@@ -203,4 +269,4 @@ def get_audit_log():
 @app.get("/api/health")
 def health_check():
     """Simple health check endpoint."""
-    return {"status": "ok", "engine": "MIST Backend Core", "version": "1.0.0"}
+    return {"status": "ok", "engine": "MIST Backend Core", "version": "2.0.0"}

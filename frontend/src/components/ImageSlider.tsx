@@ -7,6 +7,7 @@ interface Props {
   tamperScore?: number;
   info?: string;
   originalSrc?: string;
+  elaSrc?: string;
 }
 
 export const ImageSlider: React.FC<Props> = ({
@@ -14,6 +15,7 @@ export const ImageSlider: React.FC<Props> = ({
   elaFlag,
   tamperScore,
   originalSrc = '/passport.jpg',
+  elaSrc,
 }) => {
   const [pos, setPos] = useState<number>(50);
 
@@ -146,15 +148,17 @@ export const ImageSlider: React.FC<Props> = ({
         {/* Right Side: Dynamic ELA Heatmap Overlay */}
         <div className="absolute inset-0 w-full h-full transition-opacity duration-400 ease-in-out">
           <img
-            src={originalSrc}
+            src={elaSrc || originalSrc}
             alt="ELA Scan"
             className="w-full h-full object-cover filter contrast-125 brightness-95"
           />
-          {/* Heatmap blend color layer */}
-          <div className={`absolute inset-0 pointer-events-none transition-colors duration-400 ${forensics.heatmapStyle}`} />
+          {/* Heatmap blend color layer (only if elaSrc not explicitly provided) */}
+          {!elaSrc && (
+            <div className={`absolute inset-0 pointer-events-none transition-colors duration-400 ${forensics.heatmapStyle}`} />
+          )}
 
           {/* Dynamic Scenario Bounding Boxes */}
-          {forensics.boxes.map((box, idx) => (
+          {!elaSrc && forensics.boxes.map((box, idx) => (
             <div
               key={idx}
               className={`absolute border-2 ${box.borderColor} ${box.bgColor} rounded-sm flex items-start justify-start p-0.5 transition-all duration-400`}

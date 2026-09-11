@@ -24,6 +24,8 @@ export interface TamperingResult {
   info?: string;
   tamper_score?: number;
   ela_image_base64?: string;
+  mvss_image_base64?: string;
+  copy_move_base64?: string;
 }
 
 export interface BiometricResult {
@@ -55,6 +57,7 @@ export interface ScreeningResponse {
   biometrics: BiometricResult;
   shap_attributions: ShapAttribution[];
   action_required: string;
+  original_image_base64?: string;
   ds_masses?: DempsterShaferMass;
 }
 

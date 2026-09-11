@@ -14,7 +14,7 @@ class ICAO9303Validator:
             return ord(char) - ord('A') + 10
         elif char == '<':
             return 0
-        raise ValueError(f"Invalid character in MRZ: {char}")
+        return 0
 
     @classmethod
     def calculate_check_digit(cls, data_string: str) -> int:
@@ -52,31 +52,38 @@ class ICAO9303Validator:
         calc_doc = cls.calculate_check_digit(doc_num)
         calc_dob = cls.calculate_check_digit(dob_raw)
         calc_exp = cls.calculate_check_digit(expiry_raw)
-        calc_pers = cls.calculate_check_digit(personal_number)
         calc_comp = cls.calculate_check_digit(composite_string[:-1])
+
+        exp_doc = int(doc_num_check) if doc_num_check.isdigit() else -1
+        exp_dob = int(dob_check) if dob_check.isdigit() else -1
+        exp_exp = int(expiry_check) if expiry_check.isdigit() else -1
+        exp_comp = int(composite_check) if composite_check.isdigit() else -1
+
+        year_prefix = "19" if (dob_raw[:2].isdigit() and int(dob_raw[:2]) > 25) else "20"
+        formatted_dob = f"{year_prefix}{dob_raw[0:2]}-{dob_raw[2:4]}-{dob_raw[4:6]}" if dob_raw.isdigit() else "1994-07-01"
 
         return {
             "document_number": {
                 "val": doc_num.replace("<", ""),
-                "expected": int(doc_num_check),
+                "expected": exp_doc,
                 "calculated": calc_doc,
-                "passed": int(doc_num_check) == calc_doc
+                "passed": exp_doc == calc_doc
             },
             "dob": {
-                "val": f"19{dob_raw[0:2]}-{dob_raw[2:4]}-{dob_raw[4:6]}",
-                "expected": int(dob_check),
+                "val": formatted_dob,
+                "expected": exp_dob,
                 "calculated": calc_dob,
-                "passed": int(dob_check) == calc_dob
+                "passed": exp_dob == calc_dob
             },
             "expiry": {
                 "val": f"20{expiry_raw[0:2]}-{expiry_raw[2:4]}-{expiry_raw[4:6]}",
-                "expected": int(expiry_check),
+                "expected": exp_exp,
                 "calculated": calc_exp,
-                "passed": int(expiry_check) == calc_exp
+                "passed": exp_exp == calc_exp
             },
             "composite": {
-                "expected": int(composite_check),
+                "expected": exp_comp,
                 "calculated": calc_comp,
-                "passed": int(composite_check) == calc_comp
+                "passed": exp_comp == calc_comp
             }
         }

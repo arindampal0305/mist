@@ -1,32 +1,22 @@
 # MIST: Multi-layered Intelligence & Screening Technology
 
-This project is a prototype developed for Smart India Hackathon 2026.
+> **Conference Prototype Notice**  
+> This project is a working prototype developed for the **ICCI 2026 Conference** held at **BIT Mesra, Ranchi**.  
+> The core problem statement being addressed was identified and provided by the **Ministry of Home Affairs (MoHA)**.
 
-## Problem Statement Details
-* PS ID: 26188
-* Title: AI-Based Fake Identity & Document Screening System
-* Organization: Ministry of Home Affairs
-* Department: Sashastra Seema Bal (SSB), Police II Division
-* Category: Software
-* Theme: Blockchain & Cybersecurity
-
-## Team Details
-* Team Name: Hacksmiths
-* Team Members:
-  * Arindam Pal
-  * Sujal Kumar
-  * Sneha Tiwari
-  * Anuj Upadhayay
-  * Nisha Chhabra
-  * Khushi Kumari
+### Team Members
+* **Arindam Pal**
+* **Sujal Kumar**
+* **Sneha Tiwari**
+* **Aman Ansari**
 
 ---
 
 ## Project Overview
 
-MIST (Multi-layered Intelligence & Screening Technology) is an offline-first, sovereign document screening and biometric verification dashboard designed for Sashastra Seema Bal (SSB) under the Ministry of Home Affairs (MHA), Government of India.
+**MIST (Multi-layered Intelligence & Screening Technology)** is an offline-first document screening and biometric verification terminal designed for border security checkpoints under the Ministry of Home Affairs (MoHA), Government of India.
 
-The interface is built as a single-page React enterprise application styled with Tailwind CSS, Lucide-React icons, and Recharts visualization widgets. The backend is powered by FastAPI and contains functional forensic algorithms for MRZ check-digit verification, image Error Level Analysis (ELA), and Dempster-Shafer evidence fusion.
+The application features a single-page React enterprise dashboard styled with Tailwind CSS, Lucide-React icons, and Recharts visualization widgets. The backend is powered by FastAPI and integrates live computer vision, optical character recognition (OCR), digital image forensics, biometric verification, and Dempster-Shafer risk fusion engines.
 
 ---
 
@@ -37,51 +27,55 @@ mist/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py             # FastAPI entrypoint, routes and scenario orchestrator
+│   │   ├── main.py             # FastAPI entrypoint, live pipeline & scenario routes
 │   │   ├── schemas.py          # Pydantic data validation schemas
 │   │   ├── core/
-│   │   │   ├── __init__.py
-│   │   │   ├── security.py     # HMAC-SHA256 and AES-256 security helpers
-│   │   │   └── database.py     # SQLite engine (WAL Mode setup)
+│   │   │   ├── security.py     # HMAC-SHA256 & security helpers
+│   │   │   └── database.py     # SQLite audit log storage
 │   │   └── forensic/
-│   │       ├── __init__.py
-│   │       ├── mrz.py          # ICAO 9303 MRZ parsing and check-digit algorithm
-│   │       ├── ela.py          # Error Level Analysis image forensics
-│   │       └── fusion.py       # Dempster-Shafer belief combination engine
-│   └── requirements.txt        # Backend Python dependencies
+│   │       ├── ocr.py          # Real OCR & layout parsing engine (EasyOCR/Tesseract)
+│   │       ├── mrz.py          # ICAO 9303 MRZ check-digit verification
+│   │       ├── ela.py          # Error Level Analysis (ELA) JPEG compression forensics
+│   │       ├── copy_move.py    # Fridrich DCT block matching copy-move forgery detector
+│   │       ├── mvss_net.py     # Deep manipulation noise residual segmentation localizer
+│   │       ├── metadata.py     # EXIF container & software forensics
+│   │       ├── face.py         # 1:1 ArcFace facial vector similarity matching
+│   │       ├── liveness.py     # MiniFASNet passive liveness & anti-spoofing
+│   │       ├── fusion.py       # Dempster-Shafer belief mass combination engine
+│   │       └── risk_engine.py  # Platt scaling calibrator & SHAP risk attribution engine
+│   ├── requirements.txt        # Backend Python dependencies
+│   └── tests/                  # Pipeline unit test suite
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── IngestionPanel.tsx     # Ingestion dropzone, camera stream, scenario buttons
-│   │   │   ├── ForensicInspector.tsx  # ELA flags, MRZ checksum matrix, biometrics HUD
-│   │   │   ├── DecisionHub.tsx        # Risk gauge, SHAP chart, officer action drawer
-│   │   │   ├── ImageSlider.tsx        # Side-by-side ELA heatmap overlay
-│   │   │   ├── RiskGauge.tsx          # Semicircular animated risk dial
+│   │   │   ├── IngestionPanel.tsx     # Drag-and-drop scanner, live webcam, dev tools
+│   │   │   ├── ForensicInspector.tsx  # ELA & MVSS heatmaps, MRZ checksums, biometrics HUD
+│   │   │   ├── DecisionHub.tsx        # Risk gauge dial, SHAP chart, officer action drawer
+│   │   │   ├── ImageSlider.tsx        # Interactive split-view image slider
+│   │   │   ├── RiskGauge.tsx          # Radial animated risk dial
 │   │   │   └── ShapChart.tsx          # Horizontal SHAP contribution bar chart
 │   │   ├── types/
 │   │   │   └── index.ts               # Shared TypeScript interface definitions
-│   │   ├── App.tsx                    # State manager and layout grid
-│   │   ├── index.css                  # Tailwind base styles and theme
+│   │   ├── App.tsx                    # React state manager and grid layout
 │   │   └── main.tsx                   # React root entrypoint
 │   ├── package.json
 │   ├── vite.config.ts
 │   ├── tailwind.config.js
 │   ├── tsconfig.json
-│   ├── postcss.config.js
 │   └── index.html
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## Quick Start Guide
 
 ### 1. Backend Setup
 
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 ### 2. Frontend Setup
@@ -92,38 +86,28 @@ npm install
 npm run dev
 ```
 
-The frontend development server runs on `http://localhost:5173` and proxies API requests to `http://127.0.0.1:8000`.
+The React frontend development server runs on `http://localhost:5173` and proxies API requests to the FastAPI backend at `http://127.0.0.1:8000`.
+
+---
+
+## Key Features & Modules
+
+1. **Live OCR & ICAO 9303 MRZ Engine**: Reads Machine Readable Zone (MRZ) characters directly from uploaded passport images and validates weighted modulo-10 check digits across Document Number, Date of Birth, Expiry, and Composite data fields.
+2. **Multi-Layer Digital Forensics**:
+   - **Error Level Analysis (ELA)**: Locates JPEG compression differentials and editing artifacts.
+   - **Copy-Move Detector**: Performs 16×16 2D DCT block matching to identify duplicated stamps, signatures, or cloned text blocks.
+   - **MVSS-Net Localizer**: Generates 256×256 pixel-level manipulation masks using Stegananalytic high-pass noise residual variance.
+   - **EXIF Forensics**: Detects software editing signatures (Photoshop, GIMP) and timestamp discrepancies.
+3. **Biometrics & Liveness Verification**: Computes 1:1 facial embedding cosine similarity (ArcFace) and evaluates texture spectrum variance (MiniFASNet) for passive anti-spoofing.
+4. **Multimodal Risk Engine**: Fuses evidence mass functions using Dempster-Shafer orthogonal combination rule, applies Platt scaling sigmoid calibration to output a 0–100 Risk Score (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and computes dynamic SHAP feature attributions.
 
 ---
 
 ## API Endpoints
 
-* `POST /api/screen/scenario` - Inject one of 4 presentation scenarios
-* `POST /api/screen/upload` - Upload image scan for ELA tamper analysis
-* `POST /api/mrz/validate` - Validate 2-line TD3 MRZ strings using ICAO 9303 checksum math
-* `POST /api/audit/log` - Store officer determination and justification
-* `GET /api/audit/log` - Retrieve audit log records
-* `GET /api/health` - Backend status check
-
-### Presentation Scenarios
-
-* `clean_passport`: Clean passport scan, all validations pass, LOW risk (Score: 11)
-* `spliced_photo`: Photo splicing anomaly detected by ELA, face match failure, HIGH risk (Score: 79)
-* `dob_alteration`: Date of birth checksum failure in MRZ, HIGH risk (Score: 65)
-* `watchlist_hit`: MHA Security Watchlist hash match override, CRITICAL risk (Score: 100)
-
----
-
-## Core Forensic Modules
-
-1. **ICAO 9303 MRZ Validator** (`backend/app/forensic/mrz.py`): Parses passport MRZ lines and calculates weighted modulo-10 checksums across Document Number, Date of Birth, Expiry Date, and Composite data strings.
-2. **Image Error Level Analysis** (`backend/app/forensic/ela.py`): Performs JPEG compression difference analysis on uploaded document scans to locate image editing and splicing artifacts.
-3. **Dempster-Shafer Combination Engine** (`backend/app/forensic/fusion.py`): Integrates independent belief masses from verification modules using Dempster-Shafer orthogonal combination to calculate composite risk scores and handle conflicting evidence.
-
----
-
-## Deployment and Security Notes
-
-* Sovereign application structure configured for offline deployment at border checkpoints.
-* SQLite WAL mode enabled for reliable local audit record persistence.
-
+* `POST /api/screen/upload` - Live document screening endpoint (accepts document scan & optional live face image)
+* `POST /api/screen/scenario` - Demo injection endpoint for presentation scenarios
+* `POST /api/mrz/validate` - Standalone ICAO 9303 MRZ check-digit validation
+* `POST /api/audit/log` - Record officer decision and audit justification
+* `GET /api/audit/log` - Retrieve persistent local audit log entries
+* `GET /api/health` - Backend system health check
