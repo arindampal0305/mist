@@ -1,14 +1,14 @@
 # MIST: Multi-layered Intelligence & Screening Technology
 
-> **Conference Prototype Notice**  
-> This project is a working prototype developed for the **ICCI 2026 Conference** held at **BIT Mesra, Ranchi**.  
+> **Hackspire 2026 Prototype Notice**  
+> This project is a working prototype developed for **Hackspire 2026** by Team **Hacksmiths**.  
 > The core problem statement being addressed was identified and provided by the **Ministry of Home Affairs (MoHA)**.
 
-### Team Members
+### Team Members (Team Hacksmiths)
 * **Arindam Pal**
-* **Sujal Kumar**
 * **Sneha Tiwari**
-* **Aman Ansari**
+* **Sujal Kumar**
+* **Divyanka Singh**
 
 ---
 
