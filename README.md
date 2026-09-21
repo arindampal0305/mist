@@ -1,16 +1,16 @@
 # MIST: Multi-layered Intelligence & Screening Technology
 
-> **SIH 2026 Prototype Notice**  
-> This project is a working prototype developed for **SIH 2026** by Team **Hacksmiths**.  
-> The core problem statement being addressed was identified and provided by the **Ministry of Home Affairs (MoHA)**.
+> **Smart India Hackathon 2026 Prototype Notice**  
+> This project is a working prototype developed for **Smart India Hackathon (SIH) 2026** by Team **Hacksmiths** (Team ID: **138298**).  
+> **Problem Statement ID:** PS26188 (Ministry of Home Affairs - MoHA).
 
-### Team Members (Team Hacksmiths)
-* **Arindam Pal**
+### Team Members (Team Hacksmiths - ID: 138298)
+* **Arindam Pal (Leader)**
 * **Sneha Tiwari**
-* **Anuj Upadhaya**
+* **Anuj Upadhayay**
 * **Khushi Kumari**
-* **Nisha Chabbra**
 * **Sujal Kumar**
+* **Nisha Chabbra**
 
 ---
 
