@@ -34,7 +34,7 @@ export const DecisionHub: React.FC<Props> = ({ data }) => {
     };
 
     try {
-      const BASE = import.meta.env.VITE_API_URL ?? '';
+      const BASE = import.meta.env.VITE_API_URL ?? 'https://mist-w25v.onrender.com';
       await fetch(`${BASE}/api/audit/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
