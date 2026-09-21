@@ -31,7 +31,8 @@ const App: React.FC = () => {
   const handleScenario = async (scenarioId: string) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/screen/scenario', {
+      const BASE = 'https://mist-w25v.onrender.com';
+      const res = await fetch(`${BASE}/api/screen/scenario`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: scenarioId }),
@@ -161,9 +162,9 @@ const App: React.FC = () => {
             <p className="text-navy font-medium">
               MIST | Multi-layered Intelligence & Screening Technology
             </p>
-            <p>SIH 2026 Prototype | Team Hacksmiths</p>
+            <p>Hackspire 2026 Prototype | Team Hacksmiths</p>
             <p className="text-[11px] text-gray-500">
-              Members: Arindam Pal, Sneha Tiwari, Anuj Upadhaya, Khushi Kumari, Nisha Chabbra, Sujal Kumar
+              Members: Arindam Pal, Sneha Tiwari, Sujal Kumar, Divyanka Singh
             </p>
           </div>
 
@@ -175,7 +176,7 @@ const App: React.FC = () => {
 
         {/* ROW 2 - Centered Disclaimer */}
         <div className="mt-2.5 pt-2 border-t border-gray-200/70 text-center text-[10px] text-gray-400 font-normal">
-          This is a prototype with working features built for SIH 2026.
+          This is a prototype with working features built for Hackspire 2026.
         </div>
       </footer>
     </div>
