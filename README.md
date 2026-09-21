@@ -1,14 +1,16 @@
 # MIST: Multi-layered Intelligence & Screening Technology
 
-> **Hackspire 2026 Prototype Notice**  
-> This project is a working prototype developed for **Hackspire 2026** by Team **Hacksmiths**.  
+> **SIH 2026 Prototype Notice**  
+> This project is a working prototype developed for **SIH 2026** by Team **Hacksmiths**.  
 > The core problem statement being addressed was identified and provided by the **Ministry of Home Affairs (MoHA)**.
 
 ### Team Members (Team Hacksmiths)
 * **Arindam Pal**
 * **Sneha Tiwari**
+* **Anuj Upadhaya**
+* **Khushi Kumari**
+* **Nisha Chabbra**
 * **Sujal Kumar**
-* **Divyanka Singh**
 
 ---
 

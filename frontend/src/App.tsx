@@ -161,9 +161,9 @@ const App: React.FC = () => {
             <p className="text-navy font-medium">
               MIST | Multi-layered Intelligence & Screening Technology
             </p>
-            <p>Hackspire 2026 Prototype | Team Hacksmiths</p>
+            <p>SIH 2026 Prototype | Team Hacksmiths</p>
             <p className="text-[11px] text-gray-500">
-              Members: Arindam Pal, Sneha Tiwari, Sujal Kumar, Divyanka Singh
+              Members: Arindam Pal, Sneha Tiwari, Anuj Upadhaya, Khushi Kumari, Nisha Chabbra, Sujal Kumar
             </p>
           </div>
 
@@ -175,7 +175,7 @@ const App: React.FC = () => {
 
         {/* ROW 2 - Centered Disclaimer */}
         <div className="mt-2.5 pt-2 border-t border-gray-200/70 text-center text-[10px] text-gray-400 font-normal">
-          This is a prototype with working features built for Hackspire 2026.
+          This is a prototype with working features built for SIH 2026.
         </div>
       </footer>
     </div>
