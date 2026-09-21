@@ -34,7 +34,8 @@ export const DecisionHub: React.FC<Props> = ({ data }) => {
     };
 
     try {
-      await fetch('/api/audit/log', {
+      const BASE = import.meta.env.VITE_API_URL ?? '';
+      await fetch(`${BASE}/api/audit/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
